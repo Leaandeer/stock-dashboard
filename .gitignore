@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+.idea/
+.vscode/
+data/cache.db
+data/prices/*.parquet
+data/macro_state.json
+data/scanner_results.json
+data/analyst_results.json
+data/composite_history.parquet
+.ipynb_checkpoints/
