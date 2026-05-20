@@ -13,4 +13,12 @@ data/macro_state.json
 data/scanner_results.json
 data/analyst_results.json
 data/composite_history.parquet
+data/walk_forward.parquet
+data/walk_forward_segments.json
+data/breadth_cache.json
+data/crowding_cache.json
+data/sp500_tickers.csv
 .ipynb_checkpoints/
+
+# data/track_record.db is intentionally NOT ignored — it is the growing
+# forward-performance asset. Run run_performance.py locally and commit it.

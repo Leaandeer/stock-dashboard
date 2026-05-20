@@ -62,11 +62,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-cols = st.columns(3)
+cols = st.columns(4)
 items = [
     ("MACRO GATE", "Layer 1", "Should we be deploying capital, and how aggressively?", "pages/1_macro_gate.py"),
     ("SCANNER", "Layer 2", "If yes, which S&P 500 names look best by the numbers?", "pages/2_scanner.py"),
     ("ANALYST", "Layer 3", "Do the fundamentals back up what the numbers say?", "pages/3_analyst.py"),
+    ("VALIDATION", "Layer 4", "Is the composite predictive? Track record + walk-forward.", "pages/4_validation.py"),
 ]
 for col, (title, layer, desc, path) in zip(cols, items):
     with col:
@@ -83,5 +84,6 @@ st.markdown("---")
 st.markdown(
     "Open a layer from the sidebar. Refresh data from the CLI: "
     "`python run_macro_gate.py`, then `python run_scanner.py`, then "
-    "`python run_analysis.py --scan-and-analyze`."
+    "`python run_analysis.py --scan-and-analyze`, then `python run_performance.py` "
+    "to mature the track record."
 )

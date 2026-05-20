@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -9,6 +10,8 @@ from pathlib import Path
 from scanner.factors import FactorRow, compute_factors
 from scanner.universe import sp500_tickers
 from signals.composite import MacroState
+
+log = logging.getLogger(__name__)
 
 RESULTS_PATH = Path(__file__).resolve().parent.parent / "data" / "scanner_results.json"
 
@@ -106,6 +109,15 @@ def run(macro: MacroState | None = None) -> dict:
     }
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     RESULTS_PATH.write_text(json.dumps(out, indent=2))
+
+    # Snapshot top-N picks into the forward-performance track record.
+    try:
+        from tracking.performance import snapshot_scanner
+
+        snapshot_scanner(out)
+    except Exception as e:  # never let tracking break a scan
+        log.warning("scanner snapshot failed: %s", e)
+
     return out
 
 
