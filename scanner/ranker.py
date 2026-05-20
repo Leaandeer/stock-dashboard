@@ -31,7 +31,6 @@ class Candidate:
     sector: str
     momentum_12_1: float
     rel_strength: float
-    low_volatility: float
     quality: float
     value: float
     earnings_surprise: float
@@ -58,7 +57,6 @@ def run(macro: MacroState | None = None, threshold: float = COMPOSITE_THRESHOLD)
                     sector=str(row.get("sector", "Unknown")),
                     momentum_12_1=round(float(row["momentum_12_1"]), 1),
                     rel_strength=round(float(row["rel_strength"]), 1),
-                    low_volatility=round(float(row["low_volatility"]), 1),
                     quality=round(float(row["quality"]), 1),
                     value=round(float(row["value"]), 1),
                     earnings_surprise=round(float(row["earnings_surprise"]), 1),

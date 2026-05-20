@@ -88,16 +88,23 @@ actually predictive, or are we tuning to noise?**
 
 ## Scanner factors (Phase 2)
 
-The scanner ranks on 6 equal-weighted, sector-neutral factors:
+The scanner ranks on 5 sector-neutral factors, **momentum-tilted** (weights
+driven by the Part A re-validation, not equal):
 
-| Factor | Definition |
-|---|---|
-| 12-1 Momentum | return from month t-12 to t-1 (Jegadeesh-Titman) |
-| Relative Strength | 20-day return spread vs SPY |
-| Low Volatility | inverse 60-day realized return std (Frazzini-Pedersen) |
-| Quality | gross profit (TTM) / total assets (Novy-Marx) |
-| Value | inverted EV/EBITDA; negative-EBITDA names excluded |
-| Earnings Surprise | weighted EPS surprise, last 2 quarters (PEAD) |
+| Factor | Weight | Definition |
+|---|---|---|
+| 12-1 Momentum | 0.35 | return from month t-12 to t-1 (Jegadeesh-Titman) |
+| Relative Strength | 0.20 | 20-day return spread vs SPY |
+| Quality | 0.15 | gross profit (TTM) / total assets (Novy-Marx) |
+| Value | 0.15 | inverted EV/EBITDA; negative-EBITDA names excluded |
+| Earnings Surprise | 0.15 | weighted EPS surprise, last 2 quarters (PEAD) |
+
+Why the tilt: the Part A re-validation found 12-1 Momentum was by far the
+strongest factor (+95 bps per 20d) and Low Volatility was non-predictive
+(-7 bps) — so Low Volatility was dropped and 12-1 Momentum overweighted.
+Quality / Value / Earnings Surprise can't be point-in-time backtested with
+yfinance, so they are kept as fundamental ballast at a smaller, untested
+weight.
 
 Each factor is percentile-ranked **within sector** so the scanner can't pile
 into one hot sector. A ticker missing any factor is dropped, never imputed.

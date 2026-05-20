@@ -17,7 +17,6 @@ import pandas as pd
 
 from scanner.constants import FACTOR_COLS, FACTOR_WEIGHTS, MIN_SECTOR_SIZE
 from scanner.factors.earnings_surprise import raw_earnings_surprise
-from scanner.factors.low_volatility import raw_low_volatility
 from scanner.factors.momentum import raw_momentum
 from scanner.factors.quality import raw_quality
 from scanner.factors.relative_strength import raw_rel_strength
@@ -64,7 +63,6 @@ def compute_factors(universe: list[str] | None = None) -> pd.DataFrame:
         {
             "momentum_12_1": raw_momentum(prices),
             "rel_strength": raw_rel_strength(prices, spy_close),
-            "low_volatility": raw_low_volatility(prices),
             "quality": raw_quality(fundamentals),
             "value": raw_value(fundamentals),
             "earnings_surprise": raw_earnings_surprise(fundamentals),

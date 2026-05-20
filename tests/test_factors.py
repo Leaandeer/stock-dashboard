@@ -10,7 +10,6 @@ import pytest
 from scanner.constants import FACTOR_COLS, FACTOR_WEIGHTS
 from scanner.factors import _sector_neutral_rank
 from scanner.factors.earnings_surprise import raw_earnings_surprise
-from scanner.factors.low_volatility import raw_low_volatility
 from scanner.factors.momentum import raw_momentum
 from scanner.factors.quality import raw_quality
 from scanner.factors.relative_strength import raw_rel_strength
@@ -49,17 +48,6 @@ def test_rel_strength_spread():
     spy[-1] = 104.0             # +4% over 20d
     out = raw_rel_strength({"AAA": _price_df(stock)}, pd.Series(spy))
     assert out["AAA"] == pytest.approx(0.06, abs=1e-9)
-
-
-# --- low volatility ----------------------------------------------------
-
-def test_low_volatility_prefers_calm_names():
-    rng = np.random.default_rng(0)
-    calm = 100 * np.cumprod(1 + rng.normal(0, 0.005, 200))
-    wild = 100 * np.cumprod(1 + rng.normal(0, 0.05, 200))
-    out = raw_low_volatility({"CALM": _price_df(list(calm)), "WILD": _price_df(list(wild))})
-    assert out["CALM"] > out["WILD"]   # less-negative = lower vol = better
-    assert out["CALM"] < 0 and out["WILD"] < 0
 
 
 # --- quality -----------------------------------------------------------

@@ -50,8 +50,8 @@ FACTOR_SETS: dict[str, dict] = {
         "not_backtestable": {"short_interest": "yfinance exposes no historical short data"},
     },
     "v2": {
-        "label": "Phase 2 refactor",
-        "price_factors": ["momentum_12_1", "rel_strength", "low_volatility"],
+        "label": "Phase 2 refactor (momentum-tilted, 5 factors)",
+        "price_factors": ["momentum_12_1", "rel_strength"],
         "not_backtestable": {
             "quality": "fundamental factor — yfinance has no point-in-time fundamentals",
             "value": "fundamental factor — yfinance has no point-in-time fundamentals",
@@ -123,14 +123,17 @@ def _score_v1(xs: pd.DataFrame) -> pd.DataFrame:
 
 
 def _score_v2(xs: pd.DataFrame) -> pd.DataFrame:
+    # Only the 2 backtestable price factors of the final 5-factor set.
+    # Weighted by the live momentum-tilt (0.35 / 0.20), renormalized.
     scores = pd.DataFrame(
         {
             "momentum_12_1": xs["mom_12_1"].rank(pct=True) * 100.0,
             "rel_strength": xs["rs_spread"].rank(pct=True) * 100.0,
-            "low_volatility": xs["low_vol"].rank(pct=True) * 100.0,
         }
     ).dropna(how="any")
-    scores["composite"] = scores.mean(axis=1)
+    scores["composite"] = (
+        scores["momentum_12_1"] * (0.35 / 0.55) + scores["rel_strength"] * (0.20 / 0.55)
+    )
     return scores
 
 

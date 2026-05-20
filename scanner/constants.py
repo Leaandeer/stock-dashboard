@@ -9,14 +9,15 @@ COMPOSITE_THRESHOLD = 65.0
 # Max candidates surfaced / snapshotted.
 TOP_N = 30
 
-# Final factor set after the Phase 2 refactor.
+# Final factor set after the Phase 2 refactor + re-validation.
 # Removed: Volume Surge, Short Interest Decline (Part B.1).
 # Removed: 52-Week High Proximity — Part A showed a negative spread (-16 bps).
-# Replaced 52W High with Low Volatility (Part B.4 conditional).
+# Removed: Low Volatility — the Part A re-run showed it too is non-predictive
+#   (-7 bps, 48% win rate), and equal-weighting it dragged the whole composite
+#   negative. Dropped rather than carried as dead weight.
 FACTOR_COLS = [
     "momentum_12_1",
     "rel_strength",
-    "low_volatility",
     "quality",
     "value",
     "earnings_surprise",
@@ -25,17 +26,23 @@ FACTOR_COLS = [
 FACTOR_DISPLAY = {
     "momentum_12_1": "MOMENTUM 12-1",
     "rel_strength": "REL STRENGTH",
-    "low_volatility": "LOW VOL",
     "quality": "QUALITY",
     "value": "VALUE",
     "earnings_surprise": "EARN SURPRISE",
 }
 
-# Equal weight across the final factors (Part B.5). The plan text said "5
-# factors @ 0.20"; the plan's own add/remove instructions actually yield 6
-# factors, so equal weight is 1/6 each. Revisit per-factor weights after the
-# Part A re-validation if a factor shows a materially weak spread.
-FACTOR_WEIGHTS = {f: 1.0 / len(FACTOR_COLS) for f in FACTOR_COLS}
+# Momentum-tilted weights — driven by the Part A re-validation, not equal
+# weight. 12-1 Momentum was by far the strongest factor (+95 bps per 20d);
+# Relative Strength was solid (+38 bps). Quality / Value / Earnings Surprise
+# cannot be point-in-time backtested with yfinance, so they are kept as
+# fundamental ballast at a smaller, untested weight. Weights sum to 1.0.
+FACTOR_WEIGHTS = {
+    "momentum_12_1": 0.35,
+    "rel_strength": 0.20,
+    "quality": 0.15,
+    "value": 0.15,
+    "earnings_surprise": 0.15,
+}
 
 # Sector-neutral ranking: sectors with fewer than this many scored names fall
 # back to a universe-wide percentile rank (a 2-name sector can't be ranked).

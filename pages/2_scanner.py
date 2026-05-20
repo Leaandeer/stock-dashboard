@@ -19,7 +19,7 @@ register_template()
 st.set_page_config(page_title="Scanner", page_icon="🟢", layout="wide")
 
 st.markdown("## STOCK SCANNER")
-st.caption("Layer 2 — Multi-factor ranking (6 factors, equal weight, sector-neutral)")
+st.caption("Layer 2 — Multi-factor ranking (5 factors, momentum-tilted, sector-neutral)")
 
 # ---- macro context banner (informational only — not a gate, Phase 2 Part C) ----
 macro = load_macro()
@@ -50,7 +50,7 @@ with top[1]:
     st.caption("First run fetches fundamentals — can take several minutes.")
 
 if refresh or load_scanner() is None:
-    with st.spinner("Scanning the universe — computing 6 factors..."):
+    with st.spinner("Scanning the universe — computing 5 factors..."):
         try:
             results = run_scanner(macro)
         except Exception as e:
@@ -75,11 +75,11 @@ st.markdown(
 # ---- top candidates table ----
 st.markdown("### TOP CANDIDATES")
 
-WIDTHS = [0.4, 0.9, 0.8, 0.9, 1.2, 1.2, 1.2, 1.2, 1.2, 1.2]
+WIDTHS = [0.4, 0.9, 0.8, 0.9, 1.3, 1.3, 1.3, 1.3, 1.3]
 
 if not candidates:
     st.info(
-        "No candidates cleared the threshold. With 6 factors and "
+        "No candidates cleared the threshold. With 5 factors and "
         "drop-not-impute NaN handling, the fully-scored pool can be small — "
         "see the count above."
     )
@@ -98,7 +98,7 @@ else:
         cols[2].markdown(f"<span style='color:{TEXT}'>${c['price']:.2f}</span>", unsafe_allow_html=True)
         cols[3].markdown(f"<span style='color:{comp_color};font-weight:700'>{c['composite']:.0f}</span>", unsafe_allow_html=True)
         for i, f in enumerate(FACTOR_COLS):
-            cols[4 + i].markdown(signal_bar(c[f], width_px=95), unsafe_allow_html=True)
+            cols[4 + i].markdown(signal_bar(c[f], width_px=110), unsafe_allow_html=True)
 
 # ---- inspector ----
 st.markdown("---")
