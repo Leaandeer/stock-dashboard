@@ -15,8 +15,11 @@ data/analyst_results.json
 data/composite_history.parquet
 data/walk_forward.parquet
 data/walk_forward_segments.json
-data/scanner_backtest.parquet
-data/scanner_backtest_meta.json
+data/scanner_backtest_v1.parquet
+data/scanner_backtest_v1_meta.json
+data/scanner_backtest_v2.parquet
+data/scanner_backtest_v2_meta.json
+data/fundamentals_cache.parquet
 data/breadth_cache.json
 data/crowding_cache.json
 data/sp500_tickers.csv

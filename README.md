@@ -54,10 +54,11 @@ restarts (the rest of `data/` is ephemeral on the free tier).
 ## Layout
 
 - `signals/` — six macro signals + composite blender
-- `scanner/` — S&P 500 universe, five factors, ranker (gated by macro)
+- `scanner/` — universe, `factors/` package (6 factors), `fundamentals.py`, ranker (no longer macro-gated — Phase 2 Part C)
 - `analyst/` — fundamentals → Claude prompt → SQLite cache → 60/40 blender
-- `backtest/` — `panel.py` (shared signal panel), `deployment_backtest.py` (zone overlay), `walk_forward.py` (10y out-of-sample validation)
+- `backtest/` — `panel.py` (shared signal panel), `deployment_backtest.py` (zone overlay), `walk_forward.py` (10y macro validation), `scanner_backtest.py` (scanner walk-forward, v1/v2 factor sets)
 - `tracking/` — forward-performance track record (snapshot + nightly returns)
+- `tests/` — factor unit tests (`pytest tests/`)
 - `pages/` — Streamlit multipage UI (macro gate, scanner, analyst, validation)
 - `utils/` — yfinance + parquet cache, theme tokens
 
@@ -77,11 +78,31 @@ actually predictive, or are we tuning to noise?**
   shows whether refitting earns its keep out-of-sample — and, just as
   usefully, when it does not.
 - **Scanner walk-forward** (`backtest/scanner_backtest.py`, `run_scanner_backtest.py`)
-  — reconstructs the 5-factor scanner weekly over 5 years with no look-ahead
-  and reports whether the top-10 picks beat the universe forward, plus a
-  per-factor decile diagnostic. Survivorship caveat: uses the current S&P 500
-  universe. Short Interest Decline is not backtestable (no historical short
-  data in yfinance) and is held neutral.
+  — reconstructs the scanner weekly over 5 years with no look-ahead and reports
+  whether the top-10 picks beat the universe forward, plus a per-factor decile
+  diagnostic. Two factor sets: **v1** (original 5 factors) and **v2** (the
+  Phase 2 refactor). Only price factors are point-in-time backtestable;
+  fundamental factors (short interest in v1; quality / value / earnings
+  surprise in v2) are flagged "not backtestable" — yfinance exposes no
+  historical fundamentals. Survivorship caveat: uses the current S&P 500.
+
+## Scanner factors (Phase 2)
+
+The scanner ranks on 6 equal-weighted, sector-neutral factors:
+
+| Factor | Definition |
+|---|---|
+| 12-1 Momentum | return from month t-12 to t-1 (Jegadeesh-Titman) |
+| Relative Strength | 20-day return spread vs SPY |
+| Low Volatility | inverse 60-day realized return std (Frazzini-Pedersen) |
+| Quality | gross profit (TTM) / total assets (Novy-Marx) |
+| Value | inverted EV/EBITDA; negative-EBITDA names excluded |
+| Earnings Surprise | weighted EPS surprise, last 2 quarters (PEAD) |
+
+Each factor is percentile-ranked **within sector** so the scanner can't pile
+into one hot sector. A ticker missing any factor is dropped, never imputed.
+The macro gate no longer gates or resizes the scanner — it failed walk-forward
+validation and is now informational context only.
 
 ## Notes
 

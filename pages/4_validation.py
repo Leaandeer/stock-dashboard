@@ -231,41 +231,72 @@ st.markdown("---")
 # =====================================================================
 st.markdown("### Walk-forward backtest · scanner factors")
 st.caption(
-    "Reconstructs the 5-factor scanner weekly over 5 years with no look-ahead "
-    "and asks: do the top-10 picks actually beat the universe forward? The "
-    "per-factor table shows which factors carry signal and which are noise."
+    "Reconstructs the scanner weekly over 5 years with no look-ahead and asks: "
+    "do the top-10 picks beat the universe forward? v1 = original 5 factors, "
+    "v2 = the Phase 2 refactor (price factors only — fundamentals can't be "
+    "point-in-time backtested with yfinance)."
 )
 
-run_sb = st.button("Run / refresh scanner backtest (≈2-4 min, fetches 8y prices)")
-sb = None
+run_sb = st.button("Run / refresh both factor sets (≈3-6 min, fetches 8y prices)")
 if run_sb:
-    with st.spinner("Reconstructing the scanner weekly over 5 years..."):
+    with st.spinner("Reconstructing v1 and v2 weekly over 5 years..."):
         try:
-            sb = run_scanner_bt()
+            run_scanner_bt(factor_set="v1")
+            run_scanner_bt(factor_set="v2")
         except Exception as e:
             st.error(f"Backtest halted: {e}")
-else:
-    sb = load_scanner_bt()
 
-if sb is None:
+sb_v1 = load_scanner_bt("v1")
+sb_v2 = load_scanner_bt("v2")
+
+if sb_v1 is None and sb_v2 is None:
     st.info(
         "No scanner backtest yet. Click the button above, or run "
         "`python run_scanner_backtest.py` from the CLI."
     )
 else:
+    # --- v1 vs v2 headline comparison ---
+    bps1 = sb_v1.meta["headline"]["composite_20d_spread_bps"] if sb_v1 else None
+    bps2 = sb_v2.meta["headline"]["composite_20d_spread_bps"] if sb_v2 else None
+    cc = st.columns(3)
+
+    def _spread_card(col, title, bps):
+        color = GREEN if (bps or 0) >= 50 else (AMBER if (bps or 0) > 0 else RED)
+        col.markdown(
+            f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>{title}</div>"
+            f"<div style='font-size:32px;font-weight:700;color:{color}'>"
+            f"{'n/a' if bps is None else f'{bps:+.0f} bps'}</div>"
+            f"<div style='color:{MUTED};font-size:11px'>composite top-10 vs universe, 20d</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    _spread_card(cc[0], "v1 — ORIGINAL 5 FACTORS", bps1)
+    _spread_card(cc[1], "v2 — PHASE 2 REFACTOR", bps2)
+    if bps1 is not None and bps2 is not None:
+        delta = bps2 - bps1
+        dcolor = GREEN if delta > 0 else RED
+        cc[2].markdown(
+            f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>v2 − v1 DELTA</div>"
+            f"<div style='font-size:32px;font-weight:700;color:{dcolor}'>{delta:+.0f} bps</div>"
+            f"<div style='color:{MUTED};font-size:11px'>"
+            f"{'refactor helped' if delta > 0 else 'refactor did not help'}</div></div>",
+            unsafe_allow_html=True,
+        )
+
+    # --- detail for a chosen factor set ---
+    choices = [c for c, s in (("v2", sb_v2), ("v1", sb_v1)) if s is not None]
+    chosen = st.radio("Factor set detail", choices, horizontal=True)
+    sb = sb_v2 if chosen == "v2" else sb_v1
     meta = sb.meta
     cfg = meta["config"]
     head = meta["headline"]
     bps = head["composite_20d_spread_bps"]
 
     hc = st.columns(4)
-    edge_color = GREEN if (bps or 0) >= 50 else (AMBER if (bps or 0) > 0 else RED)
     hc[0].markdown(
-        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>"
-        f"COMPOSITE 20d SPREAD</div>"
-        f"<div style='font-size:34px;font-weight:700;color:{edge_color}'>"
-        f"{'n/a' if bps is None else f'{bps:+.0f} bps'}</div>"
-        f"<div style='color:{MUTED};font-size:11px'>top-10 vs universe median</div></div>",
+        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>FACTOR SET</div>"
+        f"<div style='font-size:20px;font-weight:700;margin-top:8px'>{meta['factor_set']}</div>"
+        f"<div style='color:{MUTED};font-size:11px'>{meta['label']}</div></div>",
         unsafe_allow_html=True,
     )
     hc[1].markdown(

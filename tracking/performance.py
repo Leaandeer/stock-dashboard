@@ -36,11 +36,13 @@ def _conn() -> sqlite3.Connection:
             rank INTEGER,
             composite REAL,
             price_at_snapshot REAL,
-            momentum REAL,
-            volume_surge REAL,
+            sector TEXT,
+            momentum_12_1 REAL,
             rel_strength REAL,
-            high_proximity REAL,
-            short_decline REAL,
+            low_volatility REAL,
+            quality REAL,
+            value REAL,
+            earnings_surprise REAL,
             macro_zone TEXT,
             macro_score REAL,
             created_at TEXT,
@@ -78,11 +80,12 @@ def snapshot_scanner(results: dict, top_n: int = 20) -> int:
     try:
         for c in candidates[:top_n]:
             conn.execute(
-                "INSERT OR REPLACE INTO scanner_snapshots VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT OR REPLACE INTO scanner_snapshots VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     date, c["ticker"], c["rank"], c["composite"], c["price"],
-                    c["momentum"], c["volume_surge"], c["rel_strength"],
-                    c["high_proximity"], c["short_decline"],
+                    c.get("sector", "Unknown"),
+                    c["momentum_12_1"], c["rel_strength"], c["low_volatility"],
+                    c["quality"], c["value"], c["earnings_surprise"],
                     macro_zone, macro_score, now,
                 ),
             )
