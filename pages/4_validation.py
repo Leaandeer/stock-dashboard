@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from dotenv import load_dotenv
 
+from backtest.scanner_backtest import load as load_scanner_bt, run_backtest as run_scanner_bt
 from backtest.walk_forward import load as load_wf, walk_forward, zone_summary as wf_zone_summary
 from tracking.performance import load_track_record, overall_stats, summary_by_bucket, update_returns
 from utils.theme import AMBER, GREEN, MUTED, RED, TEXT, card_style, register_template
@@ -222,3 +223,142 @@ else:
         ]
     )
     st.dataframe(seg_df, use_container_width=True)
+
+st.markdown("---")
+
+# =====================================================================
+# Section C — scanner walk-forward validation (Phase 2, Part A)
+# =====================================================================
+st.markdown("### Walk-forward backtest · scanner factors")
+st.caption(
+    "Reconstructs the 5-factor scanner weekly over 5 years with no look-ahead "
+    "and asks: do the top-10 picks actually beat the universe forward? The "
+    "per-factor table shows which factors carry signal and which are noise."
+)
+
+run_sb = st.button("Run / refresh scanner backtest (≈2-4 min, fetches 8y prices)")
+sb = None
+if run_sb:
+    with st.spinner("Reconstructing the scanner weekly over 5 years..."):
+        try:
+            sb = run_scanner_bt()
+        except Exception as e:
+            st.error(f"Backtest halted: {e}")
+else:
+    sb = load_scanner_bt()
+
+if sb is None:
+    st.info(
+        "No scanner backtest yet. Click the button above, or run "
+        "`python run_scanner_backtest.py` from the CLI."
+    )
+else:
+    meta = sb.meta
+    cfg = meta["config"]
+    head = meta["headline"]
+    bps = head["composite_20d_spread_bps"]
+
+    hc = st.columns(4)
+    edge_color = GREEN if (bps or 0) >= 50 else (AMBER if (bps or 0) > 0 else RED)
+    hc[0].markdown(
+        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>"
+        f"COMPOSITE 20d SPREAD</div>"
+        f"<div style='font-size:34px;font-weight:700;color:{edge_color}'>"
+        f"{'n/a' if bps is None else f'{bps:+.0f} bps'}</div>"
+        f"<div style='color:{MUTED};font-size:11px'>top-10 vs universe median</div></div>",
+        unsafe_allow_html=True,
+    )
+    hc[1].markdown(
+        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>SAMPLE DATES</div>"
+        f"<div style='font-size:34px;font-weight:700'>{cfg['sample_dates']}</div>"
+        f"<div style='color:{MUTED};font-size:11px'>weekly</div></div>",
+        unsafe_allow_html=True,
+    )
+    hc[2].markdown(
+        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>UNIVERSE COVERAGE</div>"
+        f"<div style='font-size:34px;font-weight:700'>{cfg['scored_coverage_pct']:.0f}%</div>"
+        f"<div style='color:{MUTED};font-size:11px'>of {cfg['universe_size']} names</div></div>",
+        unsafe_allow_html=True,
+    )
+    hc[3].markdown(
+        f"<div style='{card_style()}'><div style='color:{MUTED};font-size:11px'>OOS WINDOW</div>"
+        f"<div style='font-size:16px;font-weight:700;margin-top:10px'>{cfg['window']}</div></div>",
+        unsafe_allow_html=True,
+    )
+
+    if bps is None or bps < 50:
+        st.error(f"⚠️ {head['verdict']}")
+    else:
+        st.success(head["verdict"])
+
+    st.markdown("#### Per-factor diagnostic")
+    st.caption(
+        "Top decile by each factor alone, 20d forward return vs the universe "
+        "median. This is the diagnostic that decides which factors survive."
+    )
+    pf_rows = []
+    for pf in meta["per_factor"]:
+        if pf.get("backtestable"):
+            pf_rows.append(
+                {
+                    "Factor": pf["factor"],
+                    "Avg 20d spread (bps)": pf.get("avg_20d_spread_bps"),
+                    "Win rate vs universe": f"{pf.get('win_rate_pct')}%",
+                    "Sharpe (per 20d)": pf.get("sharpe_per_20d"),
+                    "Best year": pf.get("best_year"),
+                    "Worst year": pf.get("worst_year"),
+                }
+            )
+        else:
+            pf_rows.append(
+                {
+                    "Factor": pf["factor"],
+                    "Avg 20d spread (bps)": "—",
+                    "Win rate vs universe": "—",
+                    "Sharpe (per 20d)": "—",
+                    "Best year": pf.get("note", ""),
+                    "Worst year": "",
+                }
+            )
+    st.dataframe(pd.DataFrame(pf_rows), use_container_width=True, hide_index=True)
+
+    cbd = pd.DataFrame(meta["composite_by_date"])
+    if not cbd.empty:
+        cbd["date"] = pd.to_datetime(cbd["date"])
+        cbd = cbd.sort_values("date")
+        cbd["spread_20d"] = cbd["top_20d"] - cbd["uni_20d"]
+        cbd["cumulative_spread_pct"] = cbd["spread_20d"].cumsum() * 100.0
+
+        st.markdown("#### Cumulative spread · top picks vs universe")
+        st.caption(
+            "Running sum of the weekly 20d spread. Overlapping windows — "
+            "illustrative of edge persistence, not a tradable equity curve."
+        )
+        fig = go.Figure()
+        fig.add_hline(y=0, line=dict(color=MUTED, width=1))
+        line_color = GREEN if cbd["cumulative_spread_pct"].iloc[-1] > 0 else RED
+        fig.add_trace(
+            go.Scatter(
+                x=cbd["date"], y=cbd["cumulative_spread_pct"],
+                mode="lines", line=dict(color=line_color, width=2), name="cumulative spread %",
+            )
+        )
+        fig.update_layout(
+            height=320, margin=dict(l=30, r=20, t=20, b=30),
+            yaxis_title="cumulative 20d spread (%)",
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with st.expander("Methodology & caveats"):
+        for c in meta.get("caveats", []):
+            st.markdown(f"- {c}")
+        st.markdown("**Look-ahead spot-check** — a raw factor recomputed from "
+                    "data truncated at each sample date must match the precomputed value:")
+        la = meta.get("lookahead_check", [])
+        if la:
+            st.dataframe(pd.DataFrame(la), use_container_width=True, hide_index=True)
+            if all(c["match"] for c in la):
+                st.success("All spot-checks matched — factor computation is causal, no look-ahead.")
+            else:
+                st.error("Look-ahead spot-check FAILED — do not trust these results.")
+        st.caption(f"Generated {meta.get('generated_at','')}")

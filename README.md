@@ -76,6 +76,12 @@ actually predictive, or are we tuning to noise?**
   the 2022 bear, the 2023-24 recovery). A fitted-vs-equal-weight comparison
   shows whether refitting earns its keep out-of-sample — and, just as
   usefully, when it does not.
+- **Scanner walk-forward** (`backtest/scanner_backtest.py`, `run_scanner_backtest.py`)
+  — reconstructs the 5-factor scanner weekly over 5 years with no look-ahead
+  and reports whether the top-10 picks beat the universe forward, plus a
+  per-factor decile diagnostic. Survivorship caveat: uses the current S&P 500
+  universe. Short Interest Decline is not backtestable (no historical short
+  data in yfinance) and is held neutral.
 
 ## Notes
 
